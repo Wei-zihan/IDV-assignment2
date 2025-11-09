@@ -1,886 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG Transformations</title>
+    <title>多屏滚动展示</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        secondary: '#64748b',
-                        accent: '#f43f5e',
-                        neutral: '#f8fafc'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'custom': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    }
-                }
-            }
-        }
-    </script>
     <style type="text/tailwindcss">
         @layer utilities {
-            .svg-container {
-                @apply w-full h-32 flex items-center justify-center transition-all duration-300 ease-in-out;
+            .screen-full {
+                height: 100vh;
+                width: 100vw;
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
             }
-            .svg-container:hover {
-                @apply transform scale-105 shadow-custom;
-            }
-            .table-header {
-                @apply bg-primary text-white font-bold py-3 px-4 text-center;
-            }
-            .table-cell {
-                @apply border border-gray-200 p-2 text-center;
-            }
-            .svg-original {
-                @apply transition-all duration-300;
-            }
-            .svg-mirrored {
-                @apply transform scale-x-[-1] transition-all duration-300;
-            }
-            .svg-rotated {
-                @apply transform rotate-180 transition-all duration-300;
-            }
-            .svg-squeezed {
-                @apply transform scale-y-50 transition-all duration-300;
-            }
-            .svg-grayscale {
-                @apply filter grayscale-[100%] transition-all duration-300;
-            }
-            .tooltip {
-                @apply invisible absolute bg-gray-800 text-white text-xs rounded py-1 px-2 -mt-8 opacity-0 transition-opacity duration-300;
-                width: 120px;
+            .scroll-indicator {
+                position: fixed;
+                bottom: 30px;
                 left: 50%;
                 transform: translateX(-50%);
-                z-index: 10;
+                z-index: 100;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                cursor: pointer;
             }
-            .has-tooltip:hover .tooltip {
-                @apply visible opacity-100;
+            .scroll-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background-color: rgba(255, 255, 255, 0.5);
+                margin: 5px 0;
+                transition: all 0.3s ease;
+            }
+            .scroll-dot.active {
+                background-color: white;
+                transform: scale(1.2);
+            }
+            .scroll-arrow {
+                width: 20px;
+                height: 20px;
+                border-left: 2px solid white;
+                border-bottom: 2px solid white;
+                transform: rotate(-45deg);
+                margin-top: 10px;
+                animation: bounce 2s infinite;
+            }
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% {
+                    transform: translateY(0) rotate(-45deg);
+                }
+                40% {
+                    transform: translateY(-10px) rotate(-45deg);
+                }
+                60% {
+                    transform: translateY(-5px) rotate(-45deg);
+                }
             }
         }
     </style>
 </head>
-<body class="bg-neutral min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-primary mb-2">SVG Transformations</h1>
-            <p class="text-secondary text-lg">Exploring different transformations on asymmetric SVG graphics</p>
-        </header>
+<body class="overflow-hidden">
+    <!-- 第一屏 -->
+    <section class="screen-full" style="background-image: url('https://p3-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/e6812af7365c46c0891d78f83dba168f.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251109173821C239C943FD699E8F7A06&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1763285902&x-signature=eEL6wXXRelUAtcUZ10Kov7%2BAVwY%3D');">
+    </section>
 
-        <main class="overflow-x-auto">
-            <table class="w-full border-collapse shadow-lg bg-white">
-                <thead>
-                    <tr>
-                        <th class="table-header">SVG Shape</th>
-                        <th class="table-header">Original</th>
-                        <th class="table-header">Mirrored</th>
-                        <th class="table-header">Rotated 180°</th>
-                        <th class="table-header">Squeezed 50%</th>
-                        <th class="table-header">Grayscale</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- SVG 1: Arrow -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Arrow</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-                                            </marker>
-                                        </defs>
-                                        <line x1="20" y1="50" x2="80" y2="50" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowhead)"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <marker id="arrowhead-mirrored" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-                                            </marker>
-                                        </defs>
-                                        <line x1="20" y1="50" x2="80" y2="50" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowhead-mirrored)"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <marker id="arrowhead-rotated" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-                                            </marker>
-                                        </defs>
-                                        <line x1="20" y1="50" x2="80" y2="50" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowhead-rotated)"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <marker id="arrowhead-squeezed" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-                                            </marker>
-                                        </defs>
-                                        <line x1="20" y1="50" x2="80" y2="50" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowhead-squeezed)"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <marker id="arrowhead-grayscale" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-                                            </marker>
-                                        </defs>
-                                        <line x1="20" y1="50" x2="80" y2="50" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowhead-grayscale)"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+    <!-- 第二屏 -->
+    <section class="screen-full" style="background-image: url('https://p3-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/563a7c28ab8d4676928aa4d59234fa3c.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251109173821C239C943FD699E8F7A06&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1763285902&x-signature=9xtQG4f9LgzRC%2FzT2W1kOJH2LBc%3D');">
+    </section>
 
-                    <!-- SVG 2: Cat -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Cat</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="120" viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="70" cy="95" r="50" fill="none" stroke="#000" stroke-width="2"/>
-                                        <circle cx="55" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <circle cx="85" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <g id="whiskers">
-                                            <line x1="75" y1="95" x2="135" y2="85" stroke="#000" stroke-width="1"/>
-                                            <line x1="75" y1="95" x2="135" y2="105" stroke="#000" stroke-width="1"/>
-                                        </g>
-                                        <use href="#whiskers" transform="scale(-1 1) translate(-140 0)"/>
-                                        <polyline points="108 62,90 10,70 45,50 10,32 62" fill="none" stroke="#000" stroke-width="2"/>
-                                        <polyline points="35 110,45 120,95 120,105 110" stroke="#000" fill="none" stroke-width="1"/>
-                                        <path d="M75 90 L65 90 A 5 10 0 0 0 75 90" fill="#ffcccc" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="120" viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="70" cy="95" r="50" fill="none" stroke="#000" stroke-width="2"/>
-                                        <circle cx="55" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <circle cx="85" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <g id="whiskers2">
-                                            <line x1="75" y1="95" x2="135" y2="85" stroke="#000" stroke-width="1"/>
-                                            <line x1="75" y1="95" x2="135" y2="105" stroke="#000" stroke-width="1"/>
-                                        </g>
-                                        <use href="#whiskers2" transform="scale(-1 1) translate(-140 0)"/>
-                                        <polyline points="108 62,90 10,70 45,50 10,32 62" fill="none" stroke="#000" stroke-width="2"/>
-                                        <polyline points="35 110,45 120,95 120,105 110" stroke="#000" fill="none" stroke-width="1"/>
-                                        <path d="M75 90 L65 90 A 5 10 0 0 0 75 90" fill="#ffcccc" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="120" viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="70" cy="95" r="50" fill="none" stroke="#000" stroke-width="2"/>
-                                        <circle cx="55" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <circle cx="85" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <g id="whiskers3">
-                                            <line x1="75" y1="95" x2="135" y2="85" stroke="#000" stroke-width="1"/>
-                                            <line x1="75" y1="95" x2="135" y2="105" stroke="#000" stroke-width="1"/>
-                                        </g>
-                                        <use href="#whiskers3" transform="scale(-1 1) translate(-140 0)"/>
-                                        <polyline points="108 62,90 10,70 45,50 10,32 62" fill="none" stroke="#000" stroke-width="2"/>
-                                        <polyline points="35 110,45 120,95 120,105 110" stroke="#000" fill="none" stroke-width="1"/>
-                                        <path d="M75 90 L65 90 A 5 10 0 0 0 75 90" fill="#ffcccc" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="120" viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="70" cy="95" r="50" fill="none" stroke="#000" stroke-width="2"/>
-                                        <circle cx="55" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <circle cx="85" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <g id="whiskers4">
-                                            <line x1="75" y1="95" x2="135" y2="85" stroke="#000" stroke-width="1"/>
-                                            <line x1="75" y1="95" x2="135" y2="105" stroke="#000" stroke-width="1"/>
-                                        </g>
-                                        <use href="#whiskers4" transform="scale(-1 1) translate(-140 0)"/>
-                                        <polyline points="108 62,90 10,70 45,50 10,32 62" fill="none" stroke="#000" stroke-width="2"/>
-                                        <polyline points="35 110,45 120,95 120,105 110" stroke="#000" fill="none" stroke-width="1"/>
-                                        <path d="M75 90 L65 90 A 5 10 0 0 0 75 90" fill="#ffcccc" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="120" viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="70" cy="95" r="50" fill="none" stroke="#000" stroke-width="2"/>
-                                        <circle cx="55" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <circle cx="85" cy="80" r="5" fill="#339933" stroke="#000" stroke-width="1"/>
-                                        <g id="whiskers5">
-                                            <line x1="75" y1="95" x2="135" y2="85" stroke="#000" stroke-width="1"/>
-                                            <line x1="75" y1="95" x2="135" y2="105" stroke="#000" stroke-width="1"/>
-                                        </g>
-                                        <use href="#whiskers5" transform="scale(-1 1) translate(-140 0)"/>
-                                        <polyline points="108 62,90 10,70 45,50 10,32 62" fill="none" stroke="#000" stroke-width="2"/>
-                                        <polyline points="35 110,45 120,95 120,105 110" stroke="#000" fill="none" stroke-width="1"/>
-                                        <path d="M75 90 L65 90 A 5 10 0 0 0 75 90" fill="#ffcccc" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+    <!-- 第三屏 -->
+    <section class="screen-full" style="background-image: url('https://p26-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/8cb2721dd8d942f4ad914890ee0e96b5.png~tplv-a9rns2rl98-24:720:720.png?rcl=202511091745162DD1B514CC8B00E6E8E8&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1763286316&x-signature=2A1GaBpbz4wFJc3oeW2A7EaUyfM%3D');">
+    </section>
 
-                    <!-- SVG 3: Coffee Cup -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Coffee Cup</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M30,70 Q30,30 70,30 Q70,70 30,70" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M70,30 L85,20 L85,50 L70,40" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M35,70 L65,70" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,60" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M30,70 Q30,30 70,30 Q70,70 30,70" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M70,30 L85,20 L85,50 L70,40" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M35,70 L65,70" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,60" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M30,70 Q30,30 70,30 Q70,70 30,70" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M70,30 L85,20 L85,50 L70,40" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M35,70 L65,70" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,60" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M30,70 Q30,30 70,30 Q70,70 30,70" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M70,30 L85,20 L85,50 L70,40" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M35,70 L65,70" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,60" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M30,70 Q30,30 70,30 Q70,70 30,70" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M70,30 L85,20 L85,50 L70,40" fill="#e2e8f0" stroke="#000" stroke-width="2"/>
-                                        <path d="M35,70 L65,70" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,60" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+    <!-- 第四屏 -->
+    <section class="screen-full" style="background-image: url('https://p3-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4f84633c4c2a41e3a178553362aad685.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251109173821C239C943FD699E8F7A06&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1763285902&x-signature=HEZPlb3vzkcDCfR%2FBAAIT1TEhzk%3D');">
+    </section>
 
-                    <!-- SVG 4: Umbrella -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Umbrella</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,10 L20,40 L80,40 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L50,80" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L30,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L70,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L70,40" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,10 L20,40 L80,40 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L50,80" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L30,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L70,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L70,40" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,10 L20,40 L80,40 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L50,80" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L30,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L70,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L70,40" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,10 L20,40 L80,40 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L50,80" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L30,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L70,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L70,40" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,10 L20,40 L80,40 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L50,80" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L30,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,80 L70,90" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L70,40" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+    <!-- 第五屏 -->
+    <section class="screen-full" style="background-image: url('https://p3-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/59c01f6d728f4431a8e44a54812d7fde.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251109173821C239C943FD699E8F7A06&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1763285902&x-signature=YEqqMV%2F6eoAobQHk5l59gdiEDFU%3D');">
+    </section>
 
-                    <!-- SVG 5: Guitar -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Guitar</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 C20,60 30,40 50,40 C70,40 80,60 80,80" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L50,10" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L70,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L30,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,20 L50,35" stroke="#000" stroke-width="1"/>
-                                        <path d="M40,80 L60,80" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,85 L70,85" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 C20,60 30,40 50,40 C70,40 80,60 80,80" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L50,10" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L70,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L30,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,20 L50,35" stroke="#000" stroke-width="1"/>
-                                        <path d="M40,80 L60,80" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,85 L70,85" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 C20,60 30,40 50,40 C70,40 80,60 80,80" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L50,10" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L70,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L30,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,20 L50,35" stroke="#000" stroke-width="1"/>
-                                        <path d="M40,80 L60,80" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,85 L70,85" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 C20,60 30,40 50,40 C70,40 80,60 80,80" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L50,10" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L70,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L30,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,20 L50,35" stroke="#000" stroke-width="1"/>
-                                        <path d="M40,80 L60,80" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,85 L70,85" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 C20,60 30,40 50,40 C70,40 80,60 80,80" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L50,10" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L70,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,10 L30,20" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,20 L50,35" stroke="#000" stroke-width="1"/>
-                                        <path d="M40,80 L60,80" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,85 L70,85" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- SVG 6: Rocket -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Rocket</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L30,70 L70,70 L70,40" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,70 L20,80 L80,80 L70,70" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,30 L60,30" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,50 L55,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,60 L55,60" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L30,70 L70,70 L70,40" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,70 L20,80 L80,80 L70,70" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,30 L60,30" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,50 L55,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,60 L55,60" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L30,70 L70,70 L70,40" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,70 L20,80 L80,80 L70,70" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,30 L60,30" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,50 L55,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,60 L55,60" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L30,70 L70,70 L70,40" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,70 L20,80 L80,80 L70,70" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,30 L60,30" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,50 L55,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,60 L55,60" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,40 L30,70 L70,70 L70,40" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M30,70 L20,80 L80,80 L70,70" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,30 L60,30" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,50 L55,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M45,60 L55,60" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- SVG 7: Tree -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Tree</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,30 L20,60 L80,60 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L10,80 L90,80 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M45,80 L55,80 L55,95 L45,95 Z" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,30 L20,60 L80,60 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L10,80 L90,80 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M45,80 L55,80 L55,95 L45,95 Z" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,30 L20,60 L80,60 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L10,80 L90,80 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M45,80 L55,80 L55,95 L45,95 Z" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,30 L20,60 L80,60 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L10,80 L90,80 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M45,80 L55,80 L55,95 L45,95 Z" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 L30,40 L70,40 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,30 L20,60 L80,60 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M50,40 L10,80 L90,80 Z" fill="#22c55e" stroke="#000" stroke-width="2"/>
-                                        <path d="M45,80 L55,80 L55,95 L45,95 Z" fill="#d97706" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- SVG 8: Pen -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Pen</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 L80,20" stroke="#000" stroke-width="4"/>
-                                        <path d="M80,20 L70,30 L30,70 L20,80" fill="#64748b" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,40" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,70 L50,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M25,75 L45,55" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 L80,20" stroke="#000" stroke-width="4"/>
-                                        <path d="M80,20 L70,30 L30,70 L20,80" fill="#64748b" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,40" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,70 L50,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M25,75 L45,55" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 L80,20" stroke="#000" stroke-width="4"/>
-                                        <path d="M80,20 L70,30 L30,70 L20,80" fill="#64748b" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,40" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,70 L50,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M25,75 L45,55" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 L80,20" stroke="#000" stroke-width="4"/>
-                                        <path d="M80,20 L70,30 L30,70 L20,80" fill="#64748b" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,40" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,70 L50,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M25,75 L45,55" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,80 L80,20" stroke="#000" stroke-width="4"/>
-                                        <path d="M80,20 L70,30 L30,70 L20,80" fill="#64748b" stroke="#000" stroke-width="2"/>
-                                        <path d="M40,60 L60,40" stroke="#000" stroke-width="1"/>
-                                        <path d="M30,70 L50,50" stroke="#000" stroke-width="1"/>
-                                        <path d="M25,75 L45,55" stroke="#000" stroke-width="1"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- SVG 9: Fish -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Fish</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,50 Q40,30 70,30 Q90,40 90,50 Q90,60 70,70 Q40,70 20,50" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M20,50 L10,40 L10,60 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <circle cx="60" cy="45" r="3" fill="#000"/>
-                                        <path d="M40,50 L60,50" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                        <path d="M30,55 L50,55" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,50 Q40,30 70,30 Q90,40 90,50 Q90,60 70,70 Q40,70 20,50" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M20,50 L10,40 L10,60 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <circle cx="60" cy="45" r="3" fill="#000"/>
-                                        <path d="M40,50 L60,50" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                        <path d="M30,55 L50,55" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,50 Q40,30 70,30 Q90,40 90,50 Q90,60 70,70 Q40,70 20,50" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M20,50 L10,40 L10,60 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <circle cx="60" cy="45" r="3" fill="#000"/>
-                                        <path d="M40,50 L60,50" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                        <path d="M30,55 L50,55" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,50 Q40,30 70,30 Q90,40 90,50 Q90,60 70,70 Q40,70 20,50" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M20,50 L10,40 L10,60 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <circle cx="60" cy="45" r="3" fill="#000"/>
-                                        <path d="M40,50 L60,50" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                        <path d="M30,55 L50,55" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20,50 Q40,30 70,30 Q90,40 90,50 Q90,60 70,70 Q40,70 20,50" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <path d="M20,50 L10,40 L10,60 Z" fill="#3b82f6" stroke="#000" stroke-width="2"/>
-                                        <circle cx="60" cy="45" r="3" fill="#000"/>
-                                        <path d="M40,50 L60,50" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                        <path d="M30,55 L50,55" stroke="#000" stroke-width="1" stroke-dasharray="2,2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- SVG 10: Heart -->
-                    <tr>
-                        <td class="table-cell font-medium bg-gray-50">Heart</td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Original</div>
-                                <div class="svg-container">
-                                    <svg class="svg-original" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 C30,0 10,30 10,60 C10,80 40,95 50,95 C60,95 90,80 90,60 C90,30 70,0 50,20 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Mirrored</div>
-                                <div class="svg-container">
-                                    <svg class="svg-mirrored" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 C30,0 10,30 10,60 C10,80 40,95 50,95 C60,95 90,80 90,60 C90,30 70,0 50,20 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Rotated 180°</div>
-                                <div class="svg-container">
-                                    <svg class="svg-rotated" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 C30,0 10,30 10,60 C10,80 40,95 50,95 C60,95 90,80 90,60 C90,30 70,0 50,20 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Squeezed 50%</div>
-                                <div class="svg-container">
-                                    <svg class="svg-squeezed" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 C30,0 10,30 10,60 C10,80 40,95 50,95 C60,95 90,80 90,60 C90,30 70,0 50,20 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="table-cell">
-                            <div class="has-tooltip relative">
-                                <div class="tooltip">Grayscale</div>
-                                <div class="svg-container">
-                                    <svg class="svg-grayscale" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M50,20 C30,0 10,30 10,60 C10,80 40,95 50,95 C60,95 90,80 90,60 C90,30 70,0 50,20 Z" fill="#f43f5e" stroke="#000" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </main>
-
-        <footer class="mt-8 text-center text-secondary">
-            <p>© 2025 SVG Transformations Demo</p>
-            <p class="mt-2 text-sm">Hover over each image to see the transformation type</p>
-        </footer>
+    <!-- 滚动指示器 -->
+    <div class="scroll-indicator">
+        <div class="scroll-dot active" data-index="0"></div>
+        <div class="scroll-dot" data-index="1"></div>
+        <div class="scroll-dot" data-index="2"></div>
+        <div class="scroll-dot" data-index="3"></div>
+        <div class="scroll-dot" data-index="4"></div>
+        <div class="scroll-arrow"></div>
     </div>
 
     <script>
-        // Add interactivity: click on SVG to show transformation details
         document.addEventListener('DOMContentLoaded', function() {
-            const svgContainers = document.querySelectorAll('.svg-container');
-            
-            svgContainers.forEach(container => {
-                container.addEventListener('click', function() {
-                    const tooltip = this.parentElement.querySelector('.tooltip');
-                    const transformation = tooltip.textContent;
-                    const svgType = this.closest('tr').querySelector('td:first-child').textContent;
+            const sections = document.querySelectorAll('section');
+            const dots = document.querySelectorAll('.scroll-dot');
+            const scrollIndicator = document.querySelector('.scroll-indicator');
+            let currentSection = 0;
+            let isScrolling = false;
+
+            // 滚动到指定部分
+            function scrollToSection(index) {
+                if (isScrolling) return;
+                isScrolling = true;
+                
+                currentSection = index;
+                
+                // 更新活动点
+                dots.forEach((dot, i) => {
+                    if (i === index) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+                
+                // 滚动到对应部分
+                window.scrollTo({
+                    top: sections[index].offsetTop,
+                    behavior: 'smooth'
+                });
+                
+                // 防止滚动事件触发多次
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 1000);
+            }
+
+            // 监听滚动事件
+            window.addEventListener('scroll', function() {
+                if (isScrolling) return;
+                
+                const scrollPosition = window.scrollY;
+                
+                sections.forEach((section, index) => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
                     
-                    alert(`${svgType} - ${transformation}\n\nThis demonstrates how the SVG Shape is transformed using CSS transforms.`);
+                    if (scrollPosition >= sectionTop - 200 && 
+                        scrollPosition < sectionTop + sectionHeight - 200) {
+                        if (currentSection !== index) {
+                            currentSection = index;
+                            
+                            // 更新活动点
+                            dots.forEach((dot, i) => {
+                                if (i === index) {
+                                    dot.classList.add('active');
+                                } else {
+                                    dot.classList.remove('active');
+                                }
+                            });
+                        }
+                    }
                 });
             });
+
+            // 点击点导航到对应部分
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    scrollToSection(index);
+                });
+            });
+
+            // 点击滚动指示器导航到下一部分
+            scrollIndicator.addEventListener('click', () => {
+                const nextSection = (currentSection + 1) % sections.length;
+                scrollToSection(nextSection);
+            });
+
+            // 键盘导航
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowUp') {
+                    const prevSection = (currentSection - 1 + sections.length) % sections.length;
+                    scrollToSection(prevSection);
+                } else if (e.key === 'ArrowDown') {
+                    const nextSection = (currentSection + 1) % sections.length;
+                    scrollToSection(nextSection);
+                }
+            });
+
+            // 鼠标滚轮导航
+            window.addEventListener('wheel', function(e) {
+                if (isScrolling) return;
+                
+                if (e.deltaY > 0) {
+                    // 向下滚动
+                    const nextSection = (currentSection + 1) % sections.length;
+                    scrollToSection(nextSection);
+                } else {
+                    // 向上滚动
+                    const prevSection = (currentSection - 1 + sections.length) % sections.length;
+                    scrollToSection(prevSection);
+                }
+            });
+
+            // 触摸事件导航
+            let touchStartY = 0;
+            let touchEndY = 0;
+
+            document.addEventListener('touchstart', function(e) {
+                touchStartY = e.changedTouches[0].screenY;
+            }, false);
+
+            document.addEventListener('touchend', function(e) {
+                touchEndY = e.changedTouches[0].screenY;
+                handleSwipe();
+            }, false);
+
+            function handleSwipe() {
+                const swipeThreshold = 50; // 最小滑动距离
+                
+                if (touchEndY < touchStartY - swipeThreshold) {
+                    // 向上滑动
+                    const nextSection = (currentSection + 1) % sections.length;
+                    scrollToSection(nextSection);
+                } else if (touchEndY > touchStartY + swipeThreshold) {
+                    // 向下滑动
+                    const prevSection = (currentSection - 1 + sections.length) % sections.length;
+                    scrollToSection(prevSection);
+                }
+            }
         });
     </script>
 </body>
